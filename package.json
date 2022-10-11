@@ -1,0 +1,15 @@
+{
+  "name": "tuyul-mumbai",
+  "version": "1.0.0",
+  "description": "script for mumbai faucets",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/index.js"
+  },
+  "author": "@rashgaroth",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^18.2.1"
+  }
+}
