@@ -1,7 +1,7 @@
 const puppeteer = require("puppeteer");
 const { getDataset, sleep } = require("./utils");
-
-const url = 'https://faucet.polygon.technology/'
+const { startListening } = require("./web3");
+const url = "https://faucet.polygon.technology/";
 
 const waitTillHTMLRendered = async (page, timeout = 30000) => {
   const checkDurationMsecs = 1000;
@@ -11,75 +11,88 @@ const waitTillHTMLRendered = async (page, timeout = 30000) => {
   let countStableSizeIterations = 0;
   const minStableSizeIterations = 3;
 
-  while(checkCounts++ <= maxChecks){
+  while (checkCounts++ <= maxChecks) {
     let html = await page.content();
-    let currentHTMLSize = html.length; 
+    let currentHTMLSize = html.length;
 
-    let bodyHTMLSize = await page.evaluate(() => document.body.innerHTML.length);
+    let bodyHTMLSize = await page.evaluate(
+      () => document.body.innerHTML.length
+    );
 
-    console.log('last: ', lastHTMLSize, ' <> curr: ', currentHTMLSize, " body html size: ", bodyHTMLSize);
+    console.log(
+      "last: ",
+      lastHTMLSize,
+      " <> curr: ",
+      currentHTMLSize,
+      " body html size: ",
+      bodyHTMLSize
+    );
 
-    if(lastHTMLSize != 0 && currentHTMLSize == lastHTMLSize) 
+    if (lastHTMLSize != 0 && currentHTMLSize == lastHTMLSize)
       countStableSizeIterations++;
-    else 
-      countStableSizeIterations = 0; //reset the counter
+    else countStableSizeIterations = 0; //reset the counter
 
-    if(countStableSizeIterations >= minStableSizeIterations) {
+    if (countStableSizeIterations >= minStableSizeIterations) {
       console.log("Page rendered fully..");
       break;
     }
 
     lastHTMLSize = currentHTMLSize;
     await page.waitForTimeout(checkDurationMsecs);
-  }  
+  }
 };
 
 const main = async () => {
   try {
-    const datasets = getDataset()
-    const browser = await puppeteer.launch({ 
-      headless: false, 
-      timeout: 20000000, 
+    const datasets = getDataset();
+    const browser = await puppeteer.launch({
+      headless: true,
+      timeout: 20000000,
       args: [
-        '--disable-web-security',
-        '--disable-features=IsolateOrigins',
-        '--disable-site-isolation-trials',
-        '--disable-features=BlockInsecurePrivateNetworkRequests'
+        "--disable-web-security",
+        "--disable-features=IsolateOrigins",
+        "--disable-site-isolation-trials",
+        "--disable-features=BlockInsecurePrivateNetworkRequests",
       ],
       // devtools: true
-    })
-    for (let i=0; i < datasets.length; i++) {
-      console.log(`${i + 1}. requesting`)
-      const page = await browser.newPage()
+    });
+    for (let i = 0; i < datasets.length; i++) {
+      const data = datasets[i];
+      const { address, private_key } = data;
+      console.log(`${i + 1}. requesting`);
+      const page = await browser.newPage();
       // await page.waitForNavigation()
-      await page.goto(url, { waitUntil: 'networkidle2' })
+      await page.goto(url, { waitUntil: "networkidle2" });
 
-      console.log('input the form')
-      const input = await page.waitForSelector('input[type="text"]')
+      console.log("input the form");
+      const input = await page.waitForSelector('input[type="text"]');
 
-      console.log(`type: ${datasets[i].address}`)
+      console.log(`type: ${datasets[i].address}`);
 
-      await input.type(datasets[i].address)
-      const btn = await page.$('.btn-block')
-      
-      console.log(`Clicking`)
-      await btn.click()
-      await sleep(1000)
+      await input.type(datasets[i].address);
+      const btn = await page.$(".btn-block");
+      await sleep(2000);
 
-      const [button] = await page.$x("//button[contains(., 'Confirm')]")
-      await button.click()
-      const val =  await page.$eval('.modal-body .ps-t-8', el => el.innerText);
-      console.log(`The result: '${val}'`)
+      console.log(`Clicking`);
+      await btn.click();
+      await sleep(2000);
 
-      await sleep(5000)
+      const [button] = await page.$x("//button[contains(., 'Confirm')]");
+      await button.click();
+      const val = await page.$eval(".modal-body .ps-t-8", (el) => el.innerText);
+      console.log(`The result: '${val}'`);
 
-      await page.close()
-      console.log(`Done`)
+      await sleep(5000);
+
+      await page.close();
+      console.log(`Done `, { address: address, private_key: private_key });
     }
-    await browser.close()
+    console.log(`Start listening...`);
+    await startListening(datasets);
+    await browser.close();
   } catch (error) {
-    throw new Error(error)
+    throw new Error(error);
   }
-}
+};
 
-main().catch(console.error)
+main().catch(console.error);
