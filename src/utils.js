@@ -1,10 +1,11 @@
 const { web3 } = require("./web3");
 //                address                 |                private key
 // Set this to null to use auto generated dataset
-const dataset = null;
+// const dataset = null;
 
 // Set this number to the number of accounts you want to generate
 const accountCount = 20;
+const dataset = null;
 
 const removeByItem = (item, array) => {
   var index = array.indexOf(item);
